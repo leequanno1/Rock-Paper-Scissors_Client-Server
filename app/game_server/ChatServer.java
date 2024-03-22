@@ -12,17 +12,21 @@ public class ChatServer extends ObservableServer {
     @Override
     protected void handleMessageFromClient(Object message, ConnectionToClient client) {
         // Broadcast the message to all clients
-        sendToAllClients(client.getInfo("userName") + ": " + message);
+        if(client.getInfo("userName")==null){
+            client.setInfo("userName", message.toString());
+        }else{
+            sendToAllClients(client.getInfo("userName") + ": " + message);
+        }
     }
 
     @Override
     protected synchronized void clientConnected(ConnectionToClient client) {
-        System.out.println(client.getInfo("userName") + " connected");
+        System.out.println(client.getInetAddress() + " connected");
     }
 
     @Override
     protected synchronized void clientDisconnected(ConnectionToClient client) {
-        System.out.println(client + " disconnected");
+        System.out.println(client.getInfo("userName") + " disconnected");
     }
 
     public static void main(String[] args) {

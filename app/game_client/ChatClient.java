@@ -37,12 +37,13 @@ public class ChatClient extends ObservableClient {
 
             ChatClient client = new ChatClient(host, port, userName);
             client.openConnection();
+            client.sendToServer(client.userName);
 
             System.out.println("Welcome to the chat, " + userName + "! Type your messages below.");
             String message;
             while (true) {
                 message = reader.readLine();
-                client.sendToServer(userName + ": " + message);
+                client.sendToServer(message);
             }
         } catch (Exception e) {
             System.err.println("Error: Could not connect to server.");
