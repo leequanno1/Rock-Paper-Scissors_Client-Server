@@ -1,24 +1,41 @@
 package app.game_client;
+import app.game_server.GameServer;
 import ocsf.client.*;
 
 import java.io.*;
 
-public class ChatClient extends ObservableClient {
+public class GameClient extends ObservableClient {
 
     private String userName;
+    private short room;
+    private short point;
 
     public String getUserName() {
         return userName;
     }
-    public ChatClient(String host, int port, String userName) {
+    public GameClient(String host, int port, String userName) {
         super(host, port);
         this.userName = userName;
+    }
+
+    private void handleServerErrorMessage(Object serverMessage,String errorType, Object sendBackData){
+        if(serverMessage.toString().equals(errorType)){
+            try {
+                sendToServer(sendBackData);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 
     @Override
     protected void handleMessageFromServer(Object msg) {
         // Print message received from server
         System.out.println(msg);
+        // Check if Username existed
+        handleServerErrorMessage(msg,GameServer.USERNAME_EXISTED,ClientService.getUserNameFormInput());
+        // Check if room is full
+        handleServerErrorMessage(msg,GameServer.ROOM_FULL,ClientService.getRoomFormInput());
     }
 
     @Override
@@ -32,14 +49,12 @@ public class ChatClient extends ObservableClient {
 
         try {
             BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
-            System.out.print("Enter your name: ");
-            String userName = reader.readLine();
-
-            ChatClient client = new ChatClient(host, port, userName);
+            GameClient client = new GameClient(host, port, ClientService.getUserNameFormInput());
             client.openConnection();
             client.sendToServer(client.userName);
-
-            System.out.println("Welcome to the chat, " + userName + "! Type your messages below.");
+            Thread.sleep(500);
+            client.sendToServer(ClientService.getRoomFormInput());
+            System.out.println("Welcome to the chat, " + client.userName + "! Type your messages below.");
             String message;
             while (true) {
                 message = reader.readLine();
@@ -47,7 +62,6 @@ public class ChatClient extends ObservableClient {
             }
         } catch (Exception e) {
             System.err.println("Error: Could not connect to server.");
-            e.printStackTrace();
         }
     }
 }
