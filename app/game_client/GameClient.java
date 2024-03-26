@@ -47,6 +47,12 @@ public class GameClient extends ObservableClient {
         return ((String) serverMessage).equals(errorType);
     }
 
+    /**
+     * The <code>sendToServerAndWait</code> send message to server and 
+     * wait for the server response the return.
+     * @param mess
+     * @throws IOException
+     */
     public void sendToServerAndWait(Object mess) throws IOException{
         this.sendToServer(mess);
         while (!isServerRespone) {
@@ -97,13 +103,15 @@ public class GameClient extends ObservableClient {
                 client.sendToServerAndWait(username);
             } while (!client.isEnterOk());
             client.setUserName(username);
-
+            
+            // Set room
             Short roomNumber;
             do {
                 roomNumber = ClientService.getRoomFormInput();
                 client.sendToServerAndWait(roomNumber);
             } while (!client.isEnterOk());
 
+            // Room entered
             System.out.println("Welcome to the chat, " + client.userName + "! Type your messages below.");
             BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
             while (true) {

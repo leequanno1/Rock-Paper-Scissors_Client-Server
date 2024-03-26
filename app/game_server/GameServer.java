@@ -6,7 +6,14 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class GameServer extends ObservableServer {
+    /**
+     * An <code>USERNAME_EXISTED</code> is an username Error message
+     */
     public static final String USERNAME_EXISTED = "Your username already exist";
+
+    /**
+     * An <code>ROOM_FULL</code> is an room full Error message
+     */
     public static final String ROOM_FULL = Room.ERR_OUT_OF_CAPACITY;
 
     /**
@@ -20,69 +27,86 @@ public class GameServer extends ObservableServer {
      * @key is Short roomNumber
      * @value is a Room Object
      * */
-    private static Map<Short, Room> roomMap = new HashMap<>();
+    private static Map<Short, Room> roomToPlayerMap = new HashMap<>();
 
+    /**
+     * 
+     * @param port
+     */
     public GameServer(int port) {
         super(port);
     }
 
+    /**
+     * 
+     * @param message
+     * @param errMessage
+     * @return true if <code>Object message</code> is an Error Message
+     */
+    private boolean isErorMessage(Object message, String errMessage){
+        String messStr = (String) message;
+        return messStr.equals(errMessage);
+    }
+
+    private boolean isUserExist(String username){
+        return userToRoomMap.containsKey(username);
+    }
+
+    private boolean isRoomExist(Short room){
+        return roomToPlayerMap.containsKey(room);
+    }
+
     @Override
     protected void handleMessageFromClient(Object message, ConnectionToClient client) {
-        // Checking for userName
-        if(client.getInfo("userName")==null){
-            // Checking if username existed
-            if(!handleIsExistClientInfo(client,userToRoomMap.get(message.toString()),USERNAME_EXISTED)){
-                client.setInfo("userName", message.toString());
-                try {
-                    message = "Your user name is "+ message + " now!\n";
-                    // add available RoomList to message.
-                    client.sendToClient(message);
+        // Checking for userName if it exist
+        if(client.getInfo("username") == null){
+            String username = (String) message;
+            // If user is available : and userToRoom(value is null) and set info("username") and send back username
+            try {
+                if(!isUserExist(username)){
+                    userToRoomMap.put(username, null);
+                    client.setInfo("username", username);
+                    client.sendToClient("Your username is: " + username);
                     return;
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
+                } else {
+                // If user is exist: send to client an error message
+                    client.sendToClient(USERNAME_EXISTED);
                 }
+            } catch (Exception e) {
+                e.getStackTrace();
             }
         }
         // Checking for room if it's full
-        if(client.getInfo("room")==null){
-            Short roomNumber = (Short) message;
-            if(roomMap.get(roomNumber) == null){
-                // setInfo room for client
-                client.setInfo("room", roomNumber);
-                // create room and add player to room
-                Room room = new Room(roomNumber);
-                try {
-                    room.addPlayer(client.getInfo("userName").toString(), client);
-                    roomMap.put(roomNumber, room);
-                    client.sendToClient(Room.OK_ENTERED);
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
+        if (client.getInfo("room") == null){
+            Short roomNumer = (Short) message;
+            try {
+                // If room does not exist? create a room and add Player to room:
+                if(!isRoomExist(roomNumer)){
+                    Room room = new Room(roomNumer);
+                    room.addPlayer((String)client.getInfo("username"), client);
+                    roomToPlayerMap.put(roomNumer,room);
                 }
-            } else {
-                if(!roomMap.get(roomNumber).isFull()){
-                    Room room = roomMap.get(roomNumber);
-                    try {
-                        room.addPlayer(client.getInfo("userName").toString(), client);
-                        roomMap.replace(roomNumber,room);
-                        client.sendToClient(Room.OK_ENTERED);
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
-                    }
-                } else {
-                    try {
-                        client.sendToClient(Room.ERR_OUT_OF_CAPACITY);
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
+                // If room existed? 
+                //      (check if room is not full? 
+                //              add Player to roomToPlayerMap and add room to userToRoom : 
+                //              send back an error message):
+                else
+                {
+                    Room room = roomToPlayerMap.get(roomNumer);
+                    if(!room.isFull()){
+                        room.addPlayer((String)client.getInfo("username"), client);
+                        roomToPlayerMap.replace(roomNumer, room);
+                    } else {
+                        client.sendToClient(ROOM_FULL);
+                        return;
                     }
                 }
+                userToRoomMap.replace((String)client.getInfo("username"), roomNumer);
+                client.sendToClient("You have entered room "+ roomNumer);
+                return;
+            } catch (Exception e) {
+                // TODO: handle exception
             }
-            return;
-        }
-
-        try {
-            client.sendToClient(client.getInfo("userNam").toString()+": "+ message);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
         }
     }
 
@@ -93,27 +117,7 @@ public class GameServer extends ObservableServer {
 
     @Override
     protected synchronized void clientDisconnected(ConnectionToClient client) {
-        System.out.println(client.getInfo("userName") + " disconnected");
-    }
-    /**
-     * Function <code>handleExistClientInfo</code> has 4 param
-     * @param client is a <type>ConnectionToClient</type>;
-     * @param checkData is a <type>Object</type>;
-     * @param sendBackErrorMessage is a <type>Object</type>;
-     * */
-    private boolean handleIsExistClientInfo(ConnectionToClient client,
-                                       Object checkData,
-                                       Object sendBackErrorMessage)
-    {
-        if(checkData!=null){
-            try {
-                client.sendToClient(sendBackErrorMessage);
-                return true;
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        }
-        return false;
+        System.out.println(client.getInfo("username") + " disconnected");
     }
 
     public static void main(String[] args) {
