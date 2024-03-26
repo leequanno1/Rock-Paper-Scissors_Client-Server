@@ -1,9 +1,11 @@
 package app.messages;
 
 public class PlayTurnMessage implements CustomMessage{
+    public static final short NULL = -2;
+    public static final short NOT_SELECTED = -1;
     public static final short ROCK = 0;
     public static final short PAPER = 1;
-    public static final short SCISSORS = 3;
+    public static final short SCISSORS = 2;
 
     private short decision;
 
@@ -12,7 +14,7 @@ public class PlayTurnMessage implements CustomMessage{
     }
 
     /**
-     * @return
+     * @return <type>short</type> MessageType
      */
     @Override
     public short getMessageType() {
@@ -20,7 +22,7 @@ public class PlayTurnMessage implements CustomMessage{
     }
 
     /**
-     * @return
+     * @return <type>short</type> PlayTurnDecision
      */
     public short getPlayTurnDecision() {
         return decision;

@@ -15,7 +15,7 @@ public class ClientService {
         }
     }
 
-    public static short getRoomFormInput(){
+    public static Short getRoomFormInput(){
         BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
         try {
             System.out.print("Enter room:");
