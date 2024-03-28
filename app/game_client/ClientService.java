@@ -19,22 +19,24 @@ public class ClientService {
 
     public static Short getRoomFormInput(){
         BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+        Short res = null;
         try {
-            System.out.print("Enter room:");
-            return Short.parseShort(reader.readLine());
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+            System.out.print("Please enter room: ");
+            res = Short.parseShort(reader.readLine());
+        } catch (Exception e) {
+            System.out.println("\u001B[31mYou can only enter the number.\u001B[0m");
         }
+        return res;
     }
 
     public static void printDecisions(){
-        System.out.println("============ Please enter your choice =============");
-        System.out.println("||  1. ROCK \t\t\t\t\t ||");
-        System.out.println("||  2. PAPPER \t\t\t\t\t ||");
-        System.out.println("||  3. SCISSORS \t\t\t\t ||");
-        System.out.println("||  \t\t\t\t\t\t ||");
-        System.out.println("||  Please enter 1,2 or 3 only \t\t\t ||");
-        System.out.println("===================================================");
+        System.out.println("==== Please enter your choice =====");
+        System.out.println("||  1. ROCK \t\t\t ||");
+        System.out.println("||  2. PAPPER \t\t\t ||");
+        System.out.println("||  3. SCISSORS \t\t ||");
+        System.out.println("||  \t\t\t\t ||");
+        System.out.println("||  Please enter 1,2 or 3 only \t ||");
+        System.out.println("===================================");
     }
 
     public static Short getDecisionsFromInput(){
@@ -63,27 +65,29 @@ public class ClientService {
     }
 
     public static void handleSetRoomNumber(GameClient client) throws IOException {
-        Short roomNumber;
+        Short roomNumber = null;
         do {
-            roomNumber = ClientService.getRoomFormInput();
+            do {
+                roomNumber = ClientService.getRoomFormInput();
+            }while (roomNumber == null);
             client.sendToServerAndWait(roomNumber);
         } while (!client.isEnterOk());
         client.setRoomNumber(roomNumber);
     }
 
-    public static void handleGamePlay(GameClient client) throws Exception {
-        for(int i = 1; i <= 5; i++){
-            System.out.println(">> Turn " + i);
-            ClientService.printDecisions();
-            Short desision = null;
-            do {
-                desision = ClientService.getDecisionsFromInput();
-            } while (desision == null);
-            PlayTurnMessage playTurnMessage = new PlayTurnMessage(desision);
-            client.sendToServerAndWait(playTurnMessage);
-            Thread.sleep(500);
-        }
-    }
+//    public static void handleGamePlay(GameClient client) throws Exception {
+//        for(int i = 1; i <= 5; i++){
+//            System.out.println("\n>> Turn " + i);
+//            ClientService.printDecisions();
+//            Short desision = null;
+//            do {
+//                desision = ClientService.getDecisionsFromInput();
+//            } while (desision == null);
+//            PlayTurnMessage playTurnMessage = new PlayTurnMessage(desision);
+//            client.sendToServerAndWait(playTurnMessage);
+//            Thread.sleep(500);
+//        }
+//    }
 //    public static void main(String[] args) {
 //        printDecisions();
 //        Short desi = null;

@@ -1,12 +1,12 @@
 package app.game_client;
 
 import app.game_server.GameServer;
-import app.messages.CustomMessage;
 import app.messages.PlayTurnMessage;
+import app.messages.ServerPlayerDisconnectMessage;
 import app.messages.ServerResultMessage;
+import app.messages.ServerWinMessage;
 import ocsf.client.*;
 import java.io.*;
-import java.util.concurrent.ConcurrentLinkedDeque;
 
 public class GameClient extends ObservableClient {
 
@@ -16,6 +16,7 @@ public class GameClient extends ObservableClient {
     private boolean isEnterOk;
     private boolean isServerRespone;
     private boolean isRoomReady;
+    private boolean isRoundEnd;
 
     public Short getRoomNumber() {
         return roomNumber;
@@ -45,6 +46,14 @@ public class GameClient extends ObservableClient {
         return isEnterOk;
     }
 
+    public boolean isRoundEnd() {
+        return isRoundEnd;
+    }
+
+    public void setRoundEnd(boolean roundEnd) {
+        isRoundEnd = roundEnd;
+    }
+
     /**
      * 
      * @param host
@@ -55,6 +64,7 @@ public class GameClient extends ObservableClient {
         isEnterOk = false;
         isServerRespone = false;
         isRoomReady = false;
+        isRoundEnd = false;
         point = 0;
     }
 
@@ -95,15 +105,44 @@ public class GameClient extends ObservableClient {
         this.isServerRespone = true;
         setEnterOk(false);
         // Print message received from server
-        System.out.println(msg);
+        if(!msg.toString().contains("app.messages")){
+            System.out.println(msg);
+        }
+        // Handle player disconnected
+        if (msg instanceof ServerPlayerDisconnectMessage){
+            System.out.println("\u001B[31m\nAnother player is disconnected.\u001B[0m");
+            System.out.println("\u001B[33mThis play round end with your win.\u001B[0m");
+            try {
+                this.closeConnection();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+            System.exit(1);
+        }
+
+        // Handle ServerWinMessage
+        if (msg instanceof ServerWinMessage){
+            String playerWinRound = ((ServerWinMessage)msg).getWinPlayerName();
+            isRoundEnd = true;
+            if(playerWinRound.equals(userName)){
+                System.out.println("\u001B[33mYou win this round.\u001B[0m");
+            } else {
+                System.out.println("\u001B[33mPlayer "+ playerWinRound + " win this round.\nYou lose.\u001B[0m");
+            }
+            System.exit(1);
+        }
         // Handle ServerResultMessage
         if (msg instanceof ServerResultMessage){
-            String playerWinTurn = ((ServerResultMessage) msg).getPlayerWinRound();
+            String playerWinTurn = ((ServerResultMessage) msg).getPlayerWinTurn();
+            if(playerWinTurn.equals(ServerResultMessage.DRAW)){
+                System.out.println("\u001B[33mDRAW!!! Your score is: "+ point +" \u001B[0m");
+                return;
+            }
             if(playerWinTurn.equals(userName)){
-                System.out.println("You have win this turn");
                 point++;
+                System.out.println("\u001B[33mYou have win this turn. Your score is: "+ point +" \u001B[0m");
             } else {
-                System.out.println("You have lose this turn");
+                System.out.println("\u001B[33mYou have lose this turn. Your score is: "+ point +"\u001B[0m");
             }
             return;
         }
@@ -122,8 +161,7 @@ public class GameClient extends ObservableClient {
         }
         // End errror handle
         // Start message handle
-
-
+        
     }
 
     @Override
@@ -152,12 +190,28 @@ public class GameClient extends ObservableClient {
             while (!client.isRoomReady()) {
                 Thread.sleep(200);
             }
-            System.out.print("Welcome to the room " + client.getRoomNumber() + ", " + client.userName + "!\n");
+            System.out.print("\u001B[33mWelcome to the room " + client.getRoomNumber() + ", " + client.userName + "!\n\u001B[0m");
             // in loop
             // Handle gameplay
-           ClientService.handleGamePlay(client);
-           System.exit(1);
-
+//           ClientService.handleGamePlay(client);
+            int i = 0;
+            while (true){
+                System.out.println("\u001B[34m" + "\n>> Turn " + i +"\u001B[0m");
+                ClientService.printDecisions();
+                Short desision = null;
+                do {
+                    desision = ClientService.getDecisionsFromInput();
+                } while (desision == null);
+                PlayTurnMessage playTurnMessage = new PlayTurnMessage(desision);
+                client.sendToServerAndWait(playTurnMessage);
+                Thread.sleep(500);
+                if(client.isRoundEnd()){
+                    break;
+                }
+                i++;
+            }
+            client.closeConnection();
+            System.exit(1);
         } catch (Exception e) {
             System.err.println("Error: Could not connect to server.");
         }

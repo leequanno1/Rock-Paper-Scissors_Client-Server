@@ -1,8 +1,8 @@
 package app.game_server;
 
-import app.messages.CustomMessage;
 import app.messages.PlayTurnMessage;
 import app.messages.ServerResultMessage;
+import app.messages.ServerWinMessage;
 import ocsf.server.ConnectionToClient;
 
 import java.io.IOException;
@@ -110,7 +110,7 @@ public class Room {
                 player2.getUsername(),
                 player1.getCurrentDecision(),
                 player2.getCurrentDecision());
-        return serverResultMessage.getPlayerWinRound();
+        return serverResultMessage.getPlayerWinTurn();
     }
 
     public boolean canEndTurn(){
@@ -135,7 +135,7 @@ public class Room {
         });
     }
 
-    public void sendResultToClient(){
+    public void sendTurnResultToClient(){
         List<Player> playerList = new ArrayList<>(playerMap.values());
         Player player1 = playerList.get(0);
         Player player2 = playerList.get(1);
@@ -152,6 +152,28 @@ public class Room {
         }
     }
 
+    public void sendRoundResultToClient() {
+        String username = "";
+        List<Player> playerList = new ArrayList<>(playerMap.values());
+        for(Player player : playerList){
+            if(player.getPoint().equals(Short.parseShort("3"))){
+                username = player.getUsername();
+            }
+        }
+        ServerWinMessage winMessage = new ServerWinMessage(username);
+        try {
+            for(Player player : playerList){
+                player.getConnectionToClient().sendToClient(winMessage);
+            }
+            for(Player player : playerList){
+                player.getConnectionToClient().close();
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+    }
+
     public ServerResultMessage getResultMessage(){
         List<Player> playerList = new ArrayList<>(playerMap.values());
         Player player1 = playerList.get(0);
@@ -164,6 +186,23 @@ public class Room {
 
     public boolean isFull(){
         return this.playerMap.size() == 2;
+    }
+
+    public boolean canEndRound() {
+        boolean res = false;
+        for(Player player : playerMap.values()){
+            if( player.getPoint().equals(Short.parseShort("3"))){
+                res = true;
+                break;
+            }
+        }
+        return res;
+    }
+
+    public void resetPoint(){
+        playerMap.forEach((username, player) -> {
+            player.setPoint(Short.parseShort("0"));
+        });
     }
 
 }

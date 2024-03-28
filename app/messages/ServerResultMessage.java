@@ -3,7 +3,7 @@ package app.messages;
 import java.io.Serializable;
 
 public class ServerResultMessage extends CustomMessage implements Serializable {
-    public static final String DRAW = null;
+    public static final String DRAW = "null";
     private String player1;
     private String player2;
     private Short player1Decision;
@@ -40,7 +40,7 @@ public class ServerResultMessage extends CustomMessage implements Serializable {
         return player2Decision;
     }
 
-    public String getPlayerWinRound() {
+    public String getPlayerWinTurn() {
         if (player1Decision.equals(PlayTurnMessage.NOT_SELECTED)){
             if(!player2Decision.equals(PlayTurnMessage.NOT_SELECTED)){
                 return player2;

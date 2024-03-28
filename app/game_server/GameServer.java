@@ -1,6 +1,7 @@
 package app.game_server;
 import app.messages.CustomMessage;
 import app.messages.PlayTurnMessage;
+import app.messages.ServerPlayerDisconnectMessage;
 import app.messages.ServerResultMessage;
 import ocsf.server.*;
 
@@ -80,7 +81,19 @@ public class GameServer extends ObservableServer {
                 if(!isUserExist(username)){
                     userToRoomMap.put(username, null);
                     client.setInfo("username", username);
-                    client.sendToClient("Your username is: " + username);
+                    String mess = "Your username is: " + username +
+                            "\nPlease choose one of the given rooms below or a new room (1 - 100).\n" +
+                            "\u001B[33mAvailable room: ";
+                    for(Short rNB : roomToPlayerMap.keySet()){
+                        if(!roomToPlayerMap.get(rNB).isFull()){
+                            mess += rNB + ", ";
+                        }
+                    }
+                    if(roomToPlayerMap.keySet().isEmpty()){
+                        mess += "No room available.";
+                    }
+                    mess += "\u001B[0m";
+                    client.sendToClient(mess);
                 } else {
                 // If user exist: send to client an error message
                     client.sendToClient(USERNAME_EXISTED);
@@ -112,7 +125,8 @@ public class GameServer extends ObservableServer {
                     if(!room.isFull()){
                         room.addPlayer((String)client.getInfo("username"), client);
                         roomToPlayerMap.replace(roomNumber, room);
-                        client.sendToClient("You have entered room "+ roomNumber);
+                        String mess = "You have entered room "+ roomNumber +"\n";
+                        client.sendToClient(mess);
                         // Notify to player the room is ready (has 2 player)
                         List<Player> players = new ArrayList<>(room.getPlayerMap().values());
                         for(Player player : players){
@@ -142,8 +156,13 @@ public class GameServer extends ObservableServer {
             // Check if 2 player submitted decision ? send back to client result message : do nothing.
             if(room.canEndTurn()){
                 System.out.println(room.getPlayerWinRound());
-                room.sendResultToClient();
+                room.sendTurnResultToClient();
                 room.endTurn();
+                // check if 1 player's point is equal 3 ? send a winround message to both clienth : doing nothing
+                if(room.canEndRound()){
+                    room.sendRoundResultToClient();
+                    room.resetPoint();
+                }
             }
             roomToPlayerMap.replace(roomNumber,room);
         }
@@ -156,6 +175,27 @@ public class GameServer extends ObservableServer {
 
     @Override
     protected synchronized void clientDisconnected(ConnectionToClient client) {
+        Short roomNumber = (Short) client.getInfo("room");
+        String username = (String) client.getInfo("username");
+        if(roomNumber != null){
+            Room room = roomToPlayerMap.get(roomNumber);
+            try {
+                room.removePlayer((String) client.getInfo("username"));
+                // if room is empty? remove room : modify room
+                if(room.getPlayerMap().isEmpty()){
+                    roomToPlayerMap.remove(roomNumber);
+                }else {
+                    Player player = (new ArrayList<Player>(room.getPlayerMap().values())).get(0);
+                    player.getConnectionToClient().sendToClient(new ServerPlayerDisconnectMessage());
+                    roomToPlayerMap.replace(roomNumber,room);
+                }
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+        if(username != null){
+            userToRoomMap.remove(username);
+        }
         System.out.println(client.getInfo("username") + " disconnected");
     }
 
