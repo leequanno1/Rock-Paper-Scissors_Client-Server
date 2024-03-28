@@ -131,6 +131,7 @@ public class GameClient extends ObservableClient {
             }
             System.exit(1);
         }
+
         // Handle ServerResultMessage
         if (msg instanceof ServerResultMessage){
             String playerWinTurn = ((ServerResultMessage) msg).getPlayerWinTurn();
@@ -146,22 +147,23 @@ public class GameClient extends ObservableClient {
             }
             return;
         }
+
         // Check if Username existed
         if (isServerErrorMessage(msg, GameServer.USERNAME_EXISTED)) {
             return;
         }
+
         // Check if room is full
         if (isServerErrorMessage(msg, GameServer.ROOM_FULL)) {
             return;
         }
+
         setEnterOk(true);
         if (isServerErrorMessage(msg, GameServer.PLAYER_READY)) {
             isRoomReady = true;
             return;
         }
         // End errror handle
-        // Start message handle
-        
     }
 
     @Override
@@ -193,7 +195,6 @@ public class GameClient extends ObservableClient {
             System.out.print("\u001B[33mWelcome to the room " + client.getRoomNumber() + ", " + client.userName + "!\n\u001B[0m");
             // in loop
             // Handle gameplay
-//           ClientService.handleGamePlay(client);
             int i = 0;
             while (true){
                 System.out.println("\u001B[34m" + "\n>> Turn " + i +"\u001B[0m");

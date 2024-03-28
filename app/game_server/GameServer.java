@@ -58,10 +58,6 @@ public class GameServer extends ObservableServer {
      * @param errMessage
      * @return true if <code>Object message</code> is an Error Message
      */
-    private boolean isErorMessage(Object message, String errMessage){
-        String messStr = (String) message;
-        return messStr.equals(errMessage);
-    }
 
     private boolean isUserExist(String username){
         return userToRoomMap.containsKey(username);
@@ -103,6 +99,7 @@ public class GameServer extends ObservableServer {
                 e.getStackTrace();
             }
         }
+
         // Checking for room if it's full
         if (client.getInfo("room") == null){
             Short roomNumber = (Short) message;
@@ -144,6 +141,7 @@ public class GameServer extends ObservableServer {
                 // TODO: handle exception
             }
         }
+
         // Handle play turn message
         if(message instanceof PlayTurnMessage){
             System.out.println(message);

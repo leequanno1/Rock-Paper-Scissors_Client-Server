@@ -74,25 +74,4 @@ public class ClientService {
         } while (!client.isEnterOk());
         client.setRoomNumber(roomNumber);
     }
-
-//    public static void handleGamePlay(GameClient client) throws Exception {
-//        for(int i = 1; i <= 5; i++){
-//            System.out.println("\n>> Turn " + i);
-//            ClientService.printDecisions();
-//            Short desision = null;
-//            do {
-//                desision = ClientService.getDecisionsFromInput();
-//            } while (desision == null);
-//            PlayTurnMessage playTurnMessage = new PlayTurnMessage(desision);
-//            client.sendToServerAndWait(playTurnMessage);
-//            Thread.sleep(500);
-//        }
-//    }
-//    public static void main(String[] args) {
-//        printDecisions();
-//        Short desi = null;
-//        do {
-//            desi = getDecisionsFromInput();
-//        } while (desi==null);
-//    }
 }

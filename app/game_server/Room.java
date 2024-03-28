@@ -49,10 +49,6 @@ public class Room {
         winGamePlayer = null;
     }
 
-    public void setWinGamePlayer(String winGamePlayer) {
-        this.winGamePlayer = winGamePlayer;
-    }
-
     public Map<String, Player> getPlayerMap() {
         return playerMap;
     }
@@ -174,15 +170,6 @@ public class Room {
 
     }
 
-    public ServerResultMessage getResultMessage(){
-        List<Player> playerList = new ArrayList<>(playerMap.values());
-        Player player1 = playerList.get(0);
-        Player player2 = playerList.get(1);
-        return new ServerResultMessage(player1.getUsername(),
-                player2.getUsername(),
-                player1.getCurrentDecision(),
-                player2.getCurrentDecision());
-    }
 
     public boolean isFull(){
         return this.playerMap.size() == 2;
