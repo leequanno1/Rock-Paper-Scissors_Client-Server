@@ -43,11 +43,19 @@ public class Player {
         this.point--;
     }
 
-    public ConnectionToClient getConn() {
+    public ConnectionToClient getConnectionToClient() {
         return conn;
     }
 
-    public void setConn(ConnectionToClient conn) {
+    public void setConnectionToClient(ConnectionToClient conn) {
         this.conn = conn;
+    }
+
+    public void resetDecision(){
+        this.currentDecision = PlayTurnMessage.NOT_SELECTED;
+    }
+
+    public String toString(){
+        return username;
     }
 }

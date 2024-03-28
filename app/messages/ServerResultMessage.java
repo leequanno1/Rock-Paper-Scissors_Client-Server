@@ -1,6 +1,8 @@
 package app.messages;
 
-public class ServerResultMessage implements CustomMessage{
+import java.io.Serializable;
+
+public class ServerResultMessage extends CustomMessage implements Serializable {
     public static final String DRAW = null;
     private String player1;
     private String player2;
@@ -14,6 +16,14 @@ public class ServerResultMessage implements CustomMessage{
         this.player2Decision = player2Decision;
     }
 
+    public ServerResultMessage(Object object){
+        ServerResultMessage mess = (ServerResultMessage) object;
+        this.player1 = mess.getPlayer1();
+        this.player2 = mess.getPlayer2();
+        this.player1Decision = getPlayer1Decision();
+        this.player2Decision = getPlayer2Decision();
+    }
+
     public String getPlayer1() {
         return player1;
     }
@@ -22,51 +32,52 @@ public class ServerResultMessage implements CustomMessage{
         return player2;
     }
 
-    public short getPlayer1Decision() {
+    public Short getPlayer1Decision() {
         return player1Decision;
     }
 
-    public short getPlayer2Decision() {
+    public Short getPlayer2Decision() {
         return player2Decision;
     }
 
     public String getPlayerWinRound() {
-        switch (player1Decision){
-            case PlayTurnMessage.NOT_SELECTED:
-                if(player2Decision != PlayTurnMessage.NOT_SELECTED){
-                    return player2;
-                }
-            case PlayTurnMessage.ROCK:
-                if(player2Decision == PlayTurnMessage.PAPER){
-                    return player2;
-                }
-                if(player2Decision == PlayTurnMessage.SCISSORS || player2Decision == PlayTurnMessage.NOT_SELECTED){
-                    return player1;
-                }
-            case PlayTurnMessage.PAPER:
-                if(player2Decision == PlayTurnMessage.SCISSORS){
-                    return player2;
-                }
-                if(player2Decision == PlayTurnMessage.ROCK || player2Decision == PlayTurnMessage.NOT_SELECTED){
-                    return player1;
-                }
-            case PlayTurnMessage.SCISSORS:
-                if(player2Decision == PlayTurnMessage.ROCK){
-                    return player2;
-                }
-                if(player2Decision == PlayTurnMessage.PAPER || player2Decision == PlayTurnMessage.NOT_SELECTED){
-                    return player1;
-                }
-            default:
-                return DRAW;
+        if (player1Decision.equals(PlayTurnMessage.NOT_SELECTED)){
+            if(!player2Decision.equals(PlayTurnMessage.NOT_SELECTED)){
+                return player2;
+            }
         }
+        if (player1Decision.equals(PlayTurnMessage.ROCK)){
+            if(player2Decision.equals(PlayTurnMessage.PAPER)){
+                return player2;
+            }
+            if(player2Decision.equals(PlayTurnMessage.SCISSORS)  || player2Decision.equals(PlayTurnMessage.NOT_SELECTED) ){
+                return player1;
+            }
+        }
+        if (player1Decision.equals(PlayTurnMessage.PAPER)){
+            if(player2Decision.equals(PlayTurnMessage.SCISSORS) ){
+                return player2;
+            }
+            if(player2Decision.equals(PlayTurnMessage.ROCK) || player2Decision.equals(PlayTurnMessage.NOT_SELECTED)){
+                return player1;
+            }
+        }
+        if (player1Decision.equals(PlayTurnMessage.SCISSORS)){
+            if(player2Decision.equals(PlayTurnMessage.ROCK)){
+                return player2;
+            }
+            if(player2Decision.equals(PlayTurnMessage.PAPER) || player2Decision.equals(PlayTurnMessage.NOT_SELECTED)){
+                return player1;
+            }
+        }
+        return DRAW;
     }
 
     /**
      * @return
      */
     @Override
-    public short getMessageType() {
+    public Short getMessageType() {
         return CustomMessage.SERVER_RESULT_MESSAGE;
     }
 }

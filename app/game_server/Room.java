@@ -1,9 +1,11 @@
 package app.game_server;
 
+import app.messages.CustomMessage;
 import app.messages.PlayTurnMessage;
 import app.messages.ServerResultMessage;
 import ocsf.server.ConnectionToClient;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -49,6 +51,10 @@ public class Room {
 
     public void setWinGamePlayer(String winGamePlayer) {
         this.winGamePlayer = winGamePlayer;
+    }
+
+    public Map<String, Player> getPlayerMap() {
+        return playerMap;
     }
 
     /**
@@ -97,34 +103,63 @@ public class Room {
      * Get the win round player name
      * */
     public String getPlayerWinRound(){
-        String winPlayer = "";
         List<Player> playerList = new ArrayList<>(playerMap.values());
-        Player player1 = playerList.getFirst();
-        Player player2 = playerList.getLast();
-        ServerResultMessage result = new ServerResultMessage(player1.getUsername(),
+        Player player1 = playerList.get(0);
+        Player player2 = playerList.get(1);
+        ServerResultMessage serverResultMessage = new ServerResultMessage(player1.getUsername(),
                 player2.getUsername(),
                 player1.getCurrentDecision(),
                 player2.getCurrentDecision());
-        winPlayer = result.getPlayerWinRound();
-        if(!winPlayer.equals(ServerResultMessage.DRAW)){
-            if(winPlayer.equals(player1.getUsername())){
-                player1.increasePoint();
-                playerMap.replace(winPlayer,player1);
-                if(player2.getCurrentDecision() == PlayTurnMessage.NOT_SELECTED){
-                    player2.decreasePoint();
-                }
-            } else {
-                player2.increasePoint();
-                playerMap.replace(winPlayer,player2);
-                if(player1.getCurrentDecision() == PlayTurnMessage.NOT_SELECTED){
-                    player1.decreasePoint();
-                }
+        return serverResultMessage.getPlayerWinRound();
+    }
+
+    public boolean canEndTurn(){
+        int count = 0;
+        List<Player> players = new ArrayList<>(playerMap.values());
+        for (Player player: players){
+            if(!player.getCurrentDecision().equals(PlayTurnMessage.NOT_SELECTED)
+                    && !player.getCurrentDecision().equals(PlayTurnMessage.NULL)){
+                count++;
             }
         }
-        if(player1.getPoint() == 3 || player2.getPoint() == 3){
-            setWinGamePlayer(winPlayer);
+        return count == 2;
+    }
+
+    public void endTurn(){
+        String winPlayer = getPlayerWinRound();
+        playerMap.forEach((username,player) -> {
+            player.resetDecision();
+            if(username.equals(winPlayer)){
+                player.increasePoint();
+            }
+        });
+    }
+
+    public void sendResultToClient(){
+        List<Player> playerList = new ArrayList<>(playerMap.values());
+        Player player1 = playerList.get(0);
+        Player player2 = playerList.get(1);
+        ServerResultMessage serverResultMessage = new ServerResultMessage(player1.getUsername(),
+                player2.getUsername(),
+                player1.getCurrentDecision(),
+                player2.getCurrentDecision());
+        for(Player player : playerList) {
+            try {
+                player.getConnectionToClient().sendToClient(serverResultMessage);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
         }
-        return winPlayer;
+    }
+
+    public ServerResultMessage getResultMessage(){
+        List<Player> playerList = new ArrayList<>(playerMap.values());
+        Player player1 = playerList.get(0);
+        Player player2 = playerList.get(1);
+        return new ServerResultMessage(player1.getUsername(),
+                player2.getUsername(),
+                player1.getCurrentDecision(),
+                player2.getCurrentDecision());
     }
 
     public boolean isFull(){

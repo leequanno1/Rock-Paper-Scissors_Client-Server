@@ -1,20 +1,34 @@
 package app.game_server;
+import app.messages.CustomMessage;
+import app.messages.PlayTurnMessage;
+import app.messages.ServerResultMessage;
 import ocsf.server.*;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class GameServer extends ObservableServer {
     /**
-     * An <code>USERNAME_EXISTED</code> is an username Error message
+     * An <code>USERNAME_EXISTED</code> is a username Error message
      */
     public static final String USERNAME_EXISTED = "Your username already exist";
 
     /**
-     * An <code>ROOM_FULL</code> is an room full Error message
+     * An <code>ROOM_FULL</code> is a room full Error message
      */
     public static final String ROOM_FULL = Room.ERR_OUT_OF_CAPACITY;
+    /**
+     * 
+     */
+    public static final String WAIT_PLAYER = "Wait for another player...";
+
+    /**
+     * 
+     */
+    public static final String PLAYER_READY = "Player is ready.";
 
     /**
      * The <code>userToRoomMap</code> is a Map that has
@@ -58,7 +72,7 @@ public class GameServer extends ObservableServer {
 
     @Override
     protected void handleMessageFromClient(Object message, ConnectionToClient client) {
-        // Checking for userName if it exist
+        // Checking for userName if it's exist
         if(client.getInfo("username") == null){
             String username = (String) message;
             // If user is available : and userToRoom(value is null) and set info("username") and send back username
@@ -67,24 +81,26 @@ public class GameServer extends ObservableServer {
                     userToRoomMap.put(username, null);
                     client.setInfo("username", username);
                     client.sendToClient("Your username is: " + username);
-                    return;
                 } else {
-                // If user is exist: send to client an error message
+                // If user exist: send to client an error message
                     client.sendToClient(USERNAME_EXISTED);
                 }
+                return;
             } catch (Exception e) {
                 e.getStackTrace();
             }
         }
         // Checking for room if it's full
         if (client.getInfo("room") == null){
-            Short roomNumer = (Short) message;
+            Short roomNumber = (Short) message;
             try {
                 // If room does not exist? create a room and add Player to room:
-                if(!isRoomExist(roomNumer)){
-                    Room room = new Room(roomNumer);
+                if(!isRoomExist(roomNumber)){
+                    Room room = new Room(roomNumber);
                     room.addPlayer((String)client.getInfo("username"), client);
-                    roomToPlayerMap.put(roomNumer,room);
+                    roomToPlayerMap.put(roomNumber,room);
+                    client.sendToClient("You have entered room "+ roomNumber);
+                    client.sendToClient(WAIT_PLAYER);
                 }
                 // If room existed? 
                 //      (check if room is not full? 
@@ -92,21 +108,44 @@ public class GameServer extends ObservableServer {
                 //              send back an error message):
                 else
                 {
-                    Room room = roomToPlayerMap.get(roomNumer);
+                    Room room = roomToPlayerMap.get(roomNumber);
                     if(!room.isFull()){
                         room.addPlayer((String)client.getInfo("username"), client);
-                        roomToPlayerMap.replace(roomNumer, room);
+                        roomToPlayerMap.replace(roomNumber, room);
+                        client.sendToClient("You have entered room "+ roomNumber);
+                        // Notify to player the room is ready (has 2 player)
+                        List<Player> players = new ArrayList<>(room.getPlayerMap().values());
+                        for(Player player : players){
+                            player.getConnectionToClient().sendToClient(PLAYER_READY);
+                        }
                     } else {
                         client.sendToClient(ROOM_FULL);
                         return;
                     }
                 }
-                userToRoomMap.replace((String)client.getInfo("username"), roomNumer);
-                client.sendToClient("You have entered room "+ roomNumer);
+                userToRoomMap.replace((String)client.getInfo("username"), roomNumber);
+                client.setInfo("room", roomNumber);
                 return;
             } catch (Exception e) {
                 // TODO: handle exception
             }
+        }
+        // Handle play turn message
+        if(message instanceof PlayTurnMessage){
+            System.out.println(message);
+            PlayTurnMessage playTurnMessage;
+            playTurnMessage = (PlayTurnMessage) message;
+            String username = (String) client.getInfo("username");
+            Short roomNumber = (Short) client.getInfo("room");
+            Room room = roomToPlayerMap.get(roomNumber);
+            room.setPlayerDecision(username,playTurnMessage.getPlayTurnDecision());
+            // Check if 2 player submitted decision ? send back to client result message : do nothing.
+            if(room.canEndTurn()){
+                System.out.println(room.getPlayerWinRound());
+                room.sendResultToClient();
+                room.endTurn();
+            }
+            roomToPlayerMap.replace(roomNumber,room);
         }
     }
 

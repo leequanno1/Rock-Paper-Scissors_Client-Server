@@ -1,15 +1,17 @@
 package app.messages;
 
-public class PlayTurnMessage implements CustomMessage{
-    public static final short NULL = -2;
-    public static final short NOT_SELECTED = -1;
-    public static final short ROCK = 0;
-    public static final short PAPER = 1;
-    public static final short SCISSORS = 2;
+import java.io.Serializable;
 
-    private short decision;
+public class PlayTurnMessage extends CustomMessage implements Serializable {
+    public static final Short NULL = -2;
+    public static final Short NOT_SELECTED = -1;
+    public static final Short ROCK = 1;
+    public static final Short PAPER = 2;
+    public static final Short SCISSORS = 3;
 
-    public PlayTurnMessage(short decision) {
+    private Short decision;
+
+    public PlayTurnMessage(Short decision) {
         this.decision = decision;
     }
 
@@ -17,14 +19,14 @@ public class PlayTurnMessage implements CustomMessage{
      * @return <type>short</type> MessageType
      */
     @Override
-    public short getMessageType() {
+    public Short getMessageType() {
         return CustomMessage.PLAY_TURN_MESSAGE;
     }
 
     /**
      * @return <type>short</type> PlayTurnDecision
      */
-    public short getPlayTurnDecision() {
+    public Short getPlayTurnDecision() {
         return decision;
     }
 }

@@ -1,13 +1,33 @@
 package app.game_client;
+
 import app.game_server.GameServer;
+import app.messages.CustomMessage;
+import app.messages.PlayTurnMessage;
+import app.messages.ServerResultMessage;
 import ocsf.client.*;
 import java.io.*;
+import java.util.concurrent.ConcurrentLinkedDeque;
 
 public class GameClient extends ObservableClient {
 
     private String userName;
+    private Short roomNumber;
+    private Short point;
     private boolean isEnterOk;
     private boolean isServerRespone;
+    private boolean isRoomReady;
+
+    public Short getRoomNumber() {
+        return roomNumber;
+    }
+
+    public void setRoomNumber(Short roomNumber) {
+        this.roomNumber = roomNumber;
+    }
+
+    public boolean isRoomReady() {
+        return isRoomReady;
+    }
 
     public void setUserName(String userName) {
         this.userName = userName;
@@ -29,31 +49,35 @@ public class GameClient extends ObservableClient {
      * 
      * @param host
      * @param port
-     * @param userName
      */
     public GameClient(String host, int port) {
         super(host, port);
         isEnterOk = false;
         isServerRespone = false;
+        isRoomReady = false;
+        point = 0;
     }
 
     /**
      * the <code>isServerErrorMessage</code> method is return true if
      * the serverMessage match the errorType and return false if it's not
+     * 
      * @param serverMessage
      * @param errorType
      */
-    private boolean isServerErrorMessage(Object serverMessage,String errorType){
+    private boolean isServerErrorMessage(Object serverMessage, String errorType) {
         return ((String) serverMessage).equals(errorType);
     }
 
     /**
-     * The <code>sendToServerAndWait</code> send message to server and 
+     * The <code>sendToServerAndWait</code> send message to server and
      * wait for the server response the return.
+     * 
      * @param mess
      * @throws IOException
      */
-    public void sendToServerAndWait(Object mess) throws IOException{
+    public void sendToServerAndWait(Object mess) throws IOException {
+        this.isServerRespone = false;
         this.sendToServer(mess);
         while (!isServerRespone) {
             try {
@@ -72,15 +96,34 @@ public class GameClient extends ObservableClient {
         setEnterOk(false);
         // Print message received from server
         System.out.println(msg);
+        // Handle ServerResultMessage
+        if (msg instanceof ServerResultMessage){
+            String playerWinTurn = ((ServerResultMessage) msg).getPlayerWinRound();
+            if(playerWinTurn.equals(userName)){
+                System.out.println("You have win this turn");
+                point++;
+            } else {
+                System.out.println("You have lose this turn");
+            }
+            return;
+        }
         // Check if Username existed
-        if(isServerErrorMessage(msg,GameServer.USERNAME_EXISTED)){
+        if (isServerErrorMessage(msg, GameServer.USERNAME_EXISTED)) {
             return;
         }
         // Check if room is full
-        if(isServerErrorMessage(msg,GameServer.ROOM_FULL)){
+        if (isServerErrorMessage(msg, GameServer.ROOM_FULL)) {
             return;
         }
         setEnterOk(true);
+        if (isServerErrorMessage(msg, GameServer.PLAYER_READY)) {
+            isRoomReady = true;
+            return;
+        }
+        // End errror handle
+        // Start message handle
+
+
     }
 
     @Override
@@ -97,29 +140,26 @@ public class GameClient extends ObservableClient {
             client.openConnection();
 
             // Set username
-            String username;
-            do {
-                username = ClientService.getUserNameFormInput();
-                client.sendToServerAndWait(username);
-            } while (!client.isEnterOk());
-            client.setUserName(username);
-            
-            // Set room
-            Short roomNumber;
-            do {
-                roomNumber = ClientService.getRoomFormInput();
-                client.sendToServerAndWait(roomNumber);
-            } while (!client.isEnterOk());
+            // Handle set username
+            ClientService.handleSetUsername(client);
+
+
+            // Set room number
+            // Handle set room number
+            ClientService.handleSetRoomNumber(client);
 
             // Room entered
-            System.out.println("Welcome to the chat, " + client.userName + "! Type your messages below.");
-            BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
-            while (true) {
-                client.sendToServer(reader.readLine());
+            while (!client.isRoomReady()) {
+                Thread.sleep(200);
             }
+            System.out.print("Welcome to the room " + client.getRoomNumber() + ", " + client.userName + "!\n");
+            // in loop
+            // Handle gameplay
+           ClientService.handleGamePlay(client);
+           System.exit(1);
+
         } catch (Exception e) {
             System.err.println("Error: Could not connect to server.");
         }
     }
 }
-
